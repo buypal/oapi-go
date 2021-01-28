@@ -1,0 +1,30 @@
+openapi: "3.0.3"
+info:
+  title: "test"
+  version: "-"
+paths: 
+  /v1/items:
+    get:
+      responses:
+        "200":
+          description: "Returns items"
+          content:
+            application/json:
+              schema:
+                $ref: 'go://#/Response'
+    post:
+      requestBody:
+        required: true
+        content:
+           application/json:
+              schema:
+                $ref: 'go://#/Item'
+      responses:
+        "200":
+          description: "Create and item"
+          content:
+            application/json:
+              schema:
+                $ref: 'go://#/Response'
+        default:
+          description: Really wierd error

@@ -1,0 +1,73 @@
+openapi: 3.0.3
+info:
+  description: Some awesome description
+  title: API
+  version: 1.0.1
+components:
+  schemas:
+    Error:
+      properties:
+        message:
+          type: string
+      type: object
+    Item:
+      properties:
+        created_at:
+          type: string
+        items:
+          items:
+            $ref: '#/components/schemas/Item'
+          nullable: true
+          type: array
+        kind:
+          type: string
+      type: object
+    Response:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/Item'
+          nullable: true
+          type: array
+        links:
+          items:
+            type: string
+          nullable: true
+          type: array
+      type: object
+paths:
+  /v1/items:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+          description: Returns items
+        default:
+          content:
+            application/json:
+              schema:
+                type: number
+          description: Error response
+    post:
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Item'
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+          description: Create and item
+        default:
+          content:
+            application/json:
+              schema:
+                type: number
+          description: Really wierd error

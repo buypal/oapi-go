@@ -1,0 +1,40 @@
+# version: "1"
+
+# # Context directory usually main dir
+# dir: './items'
+
+# extends: '../base.yaml'
+
+# # Desired output
+# output: ../result.yaml
+# # format: yaml
+
+# # Info section
+# info: 
+#   title: "API"
+#   description: "Some awesome description"
+#   version: "1.0.1"
+
+# # Possible overrides, handy if you need
+# # to override stdlib for example
+# overrides:
+#   'go://github.com/buypal/oapi-go/.examples/config/items#/Response':
+#     $ref: 'go://github.com/buypal/oapi-go/.examples/config/items#/Item'
+
+# operations:
+#   /v1*:
+#     responses:
+#       default:
+#         description: "Error response"
+#         content:
+#           application/json:
+#             schema:
+#               type: number
+
+# components:
+#   schemas:
+#     Error:
+#       type: object
+#       properties:
+#         message:
+#           type: string
