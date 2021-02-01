@@ -36,8 +36,11 @@ func (p Fragment) Head() (string, bool) {
 }
 
 // Tail returns everything after the Pointer head
-func (p Fragment) Tail() Fragment {
-	return Fragment(p[1:])
+func (p Fragment) Tail() (string, bool) {
+	if len(p) > 0 {
+		return p[len(p)-1], true
+	}
+	return "", false
 }
 
 // Last returns last element

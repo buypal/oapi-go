@@ -27,7 +27,7 @@ func MergeOverride(dest, source interface{}) (interface{}, error) {
 // Which ever value is returned becomes the new value in the destination object
 // at the location of the collision.
 func (c Container) Merge(source Container, collisionFn Merger) error {
-	// source = source.Clone() // make sure we are not moving pointers
+	source = source.Clone() // make sure we are not moving pointers
 
 	var recursiveFnc func(map[string]interface{}, []string) error
 

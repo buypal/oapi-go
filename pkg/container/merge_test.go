@@ -12,6 +12,9 @@ func TestMerge(t *testing.T) {
 	})
 	c2, _ := Make(map[string]interface{}{
 		"b": 1,
+		"c": map[string]interface{}{
+			"d": 1,
+		},
 	})
 
 	err := c1.Merge(c2, MergeStrict)
@@ -19,9 +22,11 @@ func TestMerge(t *testing.T) {
 
 	m := c2.c.Data().(map[string]interface{})
 	m["b"] = 2
+	m["c"].(map[string]interface{})["d"] = 2
 
-	require.Equal(t, c1.c.Data().(map[string]interface{})["a"], 1.)
-	require.Equal(t, c2.c.Data().(map[string]interface{})["b"], 1.)
+	require.Equal(t, c1.Path("a").Data(), 1.)
+	require.Equal(t, c1.Path("b").Data(), 1.)
+	require.Equal(t, c1.Path("c.d").Data(), 1.)
 }
 
 func TestMergeStrict(t *testing.T) {

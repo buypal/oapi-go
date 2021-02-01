@@ -12,11 +12,11 @@ func Example() {
 	// "/foo/bar/baz/1"
 	// "#/foo/bar/baz/1"
 	// "http://example.com/document.json#/foo/bar/baz/1"
-	ptr, _ := Parse("/foo/bar/baz/1")
+	ptr, _ := NewFragment("/foo/bar/baz/1")
 
 	// evaluate the pointer against the document
 	// evaluation always starts at the root of the document
-	got := ptr.Fragment.Tail()
+	got, _ := ptr.Tail()
 
 	fmt.Println(got)
 	// Output: 1
@@ -73,7 +73,7 @@ func TestDescendent(t *testing.T) {
 		parsed string
 		err    string
 	}{
-		{"#/", "0", "/0", ""},
+		{"/", "0", "/0", ""},
 		{"/0", "0", "/0/0", ""},
 		{"/foo", "0", "/foo/0", ""},
 		{"/foo", "0", "/foo/0", ""},
@@ -81,13 +81,13 @@ func TestDescendent(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		p, err := Parse(c.parent)
+		p, err := NewFragment(c.parent)
 		if err != nil {
 			t.Errorf("case %d error parsing parent: %s", i, err.Error())
 			continue
 		}
 
-		desc, err := p.Fragment.Descendant(c.path)
+		desc, err := p.Descendant(c.path)
 		if !(err == nil && c.err == "" || err != nil && err.Error() == c.err) {
 			t.Errorf("case %d error mismatch. expected: %s, got: %s", i, c.err, err)
 			continue
