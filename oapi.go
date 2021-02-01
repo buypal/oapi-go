@@ -28,11 +28,7 @@ var order = []string{
 	"paths",
 }
 
-// OAPI specification wraps container and
-// parsed specification together, parsed
-// specification is used to validate & enforce
-// proper specification format, whereas container
-// is rather manipulation tool for building openapi spec.
+// OAPI specification holds valid openapi specification.
 type OAPI struct {
 	o spec.OpenAPI
 	c container.Container
@@ -67,10 +63,10 @@ func (opts *Options) path() (dir string, err error) {
 	return
 }
 
-// Option is option for Scan method
+// Option for .Scan() method
 type Option func(*Options) error
 
-// WithDir sets the directory for scan
+// WithDir sets the directory for scanning.
 func WithDir(dir string) Option {
 	return func(r *Options) error {
 		r.dir = &dir
@@ -78,7 +74,7 @@ func WithDir(dir string) Option {
 	}
 }
 
-// WithLog will set new logger
+// WithLog will set new logger.
 func WithLog(l logging.Printer) Option {
 	return func(r *Options) error {
 		if l == nil {
@@ -89,7 +85,8 @@ func WithLog(l logging.Printer) Option {
 	}
 }
 
-// WithOverride will add sets of overrides
+// WithOverride will add sets of overrides.
+// These can be used to override pointers which already exists.
 func WithOverride(or map[string]spec.Schema) Option {
 	return func(r *Options) error {
 		r.override = or
@@ -97,7 +94,7 @@ func WithOverride(or map[string]spec.Schema) Option {
 	}
 }
 
-// WithDefOps ...
+// WithDefOps is shorthant for with default operations.
 func WithDefOps(defops map[string]spec.Operation) Option {
 	return func(r *Options) error {
 		r.defops = defops
@@ -105,7 +102,8 @@ func WithDefOps(defops map[string]spec.Operation) Option {
 	}
 }
 
-// WithRootSchema ...
+// WithRootSchema is option to provide root schema.
+// This is useful if you have global components.
 func WithRootSchema(oapi spec.OpenAPI) Option {
 	return func(r *Options) error {
 		r.root = oapi
@@ -113,9 +111,8 @@ func WithRootSchema(oapi spec.OpenAPI) Option {
 	}
 }
 
-// Scan will scan types in directory for which match given pointers, it will resolve
-// pointers and types to both its relative and absolute path.
-// After scan you are free to call .Resolve() allowing to get oapi scheme.
+// Scan will scan all types in given directory (by deault cwd), and merge all
+// openapi files into single document returned as OAPI.
 func Scan(ctx context.Context, options ...Option) (s OAPI, err error) {
 	opts := &Options{
 		override: make(map[string]spec.Schema),
@@ -207,7 +204,7 @@ func Scan(ctx context.Context, options ...Option) (s OAPI, err error) {
 	return newOAPI(cnt)
 }
 
-// Format will format given specs into given format
+// Format will format given specs into given format.
 func Format(f string, oapi OAPI) (data []byte, err error) {
 	sorter := container.SortMapMarhsaler(order)
 	cont := container.NewSortMarshaller(oapi.c, sorter)

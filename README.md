@@ -81,7 +81,7 @@ Similary any protocol can be resolved this way (go://, file://, http://, etc).
 
 ## Motivation:
 
-This library is trying to challange way how currently many openapi/swag libraries work.
+This library is trying to challange way how currently many openapi / swag libraries work.
 Traditionally if you want to make your go application being source of truth of your 
 swagger / openapi specification, you have to use "magic" comments which will be parsed
 and specification will be generated.
