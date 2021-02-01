@@ -1,5 +1,7 @@
 # OAPI GO
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/buypal/oapi-go.svg)](https://pkg.go.dev/github.com/buypal/oapi-go)
+
 **Make your go application (partial) source of truth for your OpenAPI spec.**
 
 This library acts as if go packages, yaml files, or json files were just json documents,
