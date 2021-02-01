@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/buypal/oapi-go/pkg/container"
-	"github.com/buypal/oapi-go/pkg/otag"
+	"github.com/buypal/oapi-go/pkg/oapi/tag"
 	"github.com/buypal/oapi-go/pkg/pointer"
 	"github.com/stretchr/testify/require"
 )
@@ -393,7 +393,7 @@ type: object
 
 			var m pointmap
 			require.NoError(t, collectTypes(tp, &m))
-			sp, err := type2schema(tp.Type(), m, path{}, otag.Tag{})
+			sp, err := type2schema(tp.Type(), m, path{}, tag.Tag{})
 			require.NoError(t, err)
 
 			c1, err := container.ReadYAML([]byte(schema))

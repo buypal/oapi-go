@@ -180,6 +180,6 @@ func (tp pointmap) log(log logging.Printer) {
 	})
 	sort.Strings(k)
 	for _, v := range k {
-		logging.LogFunc(log)("%s => %s", v, m[v])
+		logging.Debug(log, "%s => %s", v, m[v])
 	}
 }

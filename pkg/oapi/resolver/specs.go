@@ -64,7 +64,7 @@ func (r *specScanner) scan(pkg *packages.Package) (errs []error) {
 
 			r.pointers[p.String()] = p
 
-			_, err = c.SetP(v.Key, p.String())
+			err = c.SetP(v.Key, p.String())
 			if err != nil {
 				return []error{err}
 			}

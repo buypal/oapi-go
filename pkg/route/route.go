@@ -7,69 +7,53 @@ import (
 )
 
 var (
-	regexen = make(map[string]*regexp.Regexp)
-	relock  sync.Mutex
-)
+	regexen   = make(map[string]*regexp.Regexp)
+	variables = regexp.MustCompile(`(\{[a-z][a-zA-Z0-9]+?\}|\*)`)
 
-func compileCached(pattern string) (*regexp.Regexp, error) {
-	relock.Lock()
-	defer relock.Unlock()
-
-	regex := regexen[pattern]
-	if regex == nil {
-		var err error
-		regex, err = regexp.Compile("^" + pattern + "$")
-		if err != nil {
-			return nil, err
-		}
-		regexen[pattern] = regex
+	methods = []string{
+		"ACL",
+		"BASELINE-CONTROL",
+		"BIND",
+		"CHECKIN",
+		"CHECKOUT",
+		"CONNECT",
+		"COPY",
+		"DELETE",
+		"GET",
+		"HEAD",
+		"LABEL",
+		"LINK",
+		"LOCK",
+		"MERGE",
+		"MKACTIVITY",
+		"MKCALENDAR",
+		"MKCOL",
+		"MKREDIRECTREF",
+		"MKWORKSPACE",
+		"MOVE",
+		"OPTIONS",
+		"ORDERPATCH",
+		"PATCH",
+		"POST",
+		"PRI",
+		"PROPFIND",
+		"PROPPATCH",
+		"PUT",
+		"REBIND",
+		"REPORT",
+		"SEARCH",
+		"TRACE",
+		"UNBIND",
+		"UNCHECKOUT",
+		"UNLINK",
+		"UNLOCK",
+		"UPDATE",
+		"UPDATEREDIRECTREF",
+		"VERSION-CONTROL",
 	}
-	return regex, nil
-}
 
-var variables = regexp.MustCompile(`(\{[a-z][a-zA-Z0-9]+?\}|\*)`)
-
-var methods = []string{
-	"ACL",
-	"BASELINE-CONTROL",
-	"BIND",
-	"CHECKIN",
-	"CHECKOUT",
-	"CONNECT",
-	"COPY",
-	"DELETE",
-	"GET",
-	"HEAD",
-	"LABEL",
-	"LINK",
-	"LOCK",
-	"MERGE",
-	"MKACTIVITY",
-	"MKCALENDAR",
-	"MKCOL",
-	"MKREDIRECTREF",
-	"MKWORKSPACE",
-	"MOVE",
-	"OPTIONS",
-	"ORDERPATCH",
-	"PATCH",
-	"POST",
-	"PRI",
-	"PROPFIND",
-	"PROPPATCH",
-	"PUT",
-	"REBIND",
-	"REPORT",
-	"SEARCH",
-	"TRACE",
-	"UNBIND",
-	"UNCHECKOUT",
-	"UNLINK",
-	"UNLOCK",
-	"UPDATE",
-	"UPDATEREDIRECTREF",
-	"VERSION-CONTROL",
-}
+	relock sync.Mutex
+)
 
 // Match will match given route towards given pattern
 func Match(pattern, method, path string) (bool, error) {
@@ -111,11 +95,18 @@ func Match(pattern, method, path string) (bool, error) {
 	return reg.MatchString(path), nil
 }
 
-// MustMatch panic version of Match
-func MustMatch(pattern, method, path string) bool {
-	x, err := Match(pattern, method, path)
-	if err != nil {
-		panic(err)
+func compileCached(pattern string) (*regexp.Regexp, error) {
+	relock.Lock()
+	defer relock.Unlock()
+
+	regex := regexen[pattern]
+	if regex == nil {
+		var err error
+		regex, err = regexp.Compile("^" + pattern + "$")
+		if err != nil {
+			return nil, err
+		}
+		regexen[pattern] = regex
 	}
-	return x
+	return regex, nil
 }

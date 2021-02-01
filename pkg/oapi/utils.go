@@ -11,62 +11,69 @@ import (
 	"github.com/buypal/oapi-go/pkg/route"
 )
 
+// Entity is named entity.
 type Entity struct {
 	Entity spec.Entity
 	Name   string
 }
 
+// Path returns dot path.
 func (pe Entity) Path() string {
 	return fmt.Sprintf("%s.%s", pe.Entity.Path(), pe.Name)
 }
 
+// Fragment return fragment path
 func (pe Entity) Fragment() pointer.Fragment {
 	f, _ := pe.Entity.Fragment().Descendant(pe.Name)
 	return f
 }
 
+// IsScheme reports if entitiy is scheme
 func (pe Pointer) IsScheme() bool {
 	return pe.Entity.Entity == spec.SchemaKind
 }
 
-// EntityValue ...
+// EntityValue represent entity with value.
 type EntityValue struct {
 	Entity
 	Value interface{}
 }
 
-// SetEntity ...
+// SetEntity sets at path the entity.
 func SetEntity(cx container.Container, key string, entity EntityValue) (err error) {
-	_, err = cx.SetP(entity.Path(), entity.Value)
+	err = cx.SetP(entity.Path(), entity.Value)
 	return
 }
 
-// ReplacePtr ...
+// ReplacePtr will check if key is path to pointer (aka ends .$ref),
+// if so it will replace given pointer object with value.
 func ReplacePtr(cx container.Container, key string, value interface{}) (err error) {
 	path, ok := isref(key)
 	if !ok {
 		return errors.New("not a pointer")
 	}
-	_, err = cx.SetP(path, value)
+	err = cx.SetP(path, value)
 	return
 }
 
-// ReplacePtrWithEmptyObject ...
+// ReplacePtrWithEmptyObject similar to ReplacePtr except it will replace
+// with empty object. This might be handy for circular references.
 func ReplacePtrWithEmptyObject(cx container.Container, key string) (err error) {
-	return ReplacePtr(cx, key, container.EmptyObject())
+	return ReplacePtr(cx, key, container.New())
 }
 
-// UpdatePtr ...
+// UpdatePtr will set new pointer in given location.
 func UpdatePtr(cx container.Container, key string, pp pointer.Pointer) (err error) {
 	_, ok := isref(key)
 	if !ok {
 		return errors.New("not a pointer")
 	}
-	_, err = cx.SetP(key, pp.String())
+	err = cx.SetP(key, pp.String())
 	return
 }
 
-// UpdatePtrToLocal ...
+// UpdatePtrToLocal will set new pointer but unline UpdatePtr it will
+// use local path. It set only fragment pointing to local document.
 func UpdatePtrToLocal(cx container.Container, key string, f pointer.Fragment) (err error) {
 	nptr := pointer.NewPointer()
 	nptr.Fragment = f
@@ -86,7 +93,7 @@ func isref(s string) (string, bool) {
 	return strings.Join(ss[:len(ss)-1], "."), true
 }
 
-// FlattenPath represents single reuqest path merged with method
+// FlattenPath represents single reuqest path in oapi spec.
 type FlattenPath struct {
 	Method    string
 	Path      string
@@ -113,17 +120,7 @@ func (fp FlattenPaths) Match(pattern string) (xx []FlattenPath, err error) {
 	return
 }
 
-func SliceToDotPath(path []string) string {
-	hierarchy := make([]string, len(path))
-	for i, v := range path {
-		v = strings.Replace(v, ".", "~1", -1)
-		v = strings.Replace(v, "~", "~0", -1)
-		hierarchy[i] = v
-	}
-	return strings.Join(hierarchy, ".")
-}
-
-// Paths will return array of paths
+// Paths will parse paths in oapi container and return array of paths.
 func Paths(cnt container.Container) (ff FlattenPaths, err error) {
 	paths, err := cnt.Path("paths").ChildrenMap()
 	if err != nil {
@@ -141,7 +138,7 @@ func Paths(cnt container.Container) (ff FlattenPaths, err error) {
 				Method:    m,
 				Path:      path,
 				Operation: obj,
-				Key: SliceToDotPath([]string{
+				Key: container.SliceToDotPath([]string{
 					"paths", path, m,
 				}),
 			})
@@ -150,7 +147,9 @@ func Paths(cnt container.Container) (ff FlattenPaths, err error) {
 	return
 }
 
-// SetPathsDefaults ...
+// SetPathsDefaults will iterate through paths and
+// apply default on each path. This might be useful for
+// supplying default headers or default responses.
 func SetPathsDefaults(cnt container.Container, defops map[string]spec.Operation) (err error) {
 	paths, err := Paths(cnt)
 	if err != nil {
@@ -177,7 +176,7 @@ func SetPathsDefaults(cnt container.Container, defops map[string]spec.Operation)
 				return
 			}
 
-			_, err = cnt.SetP(f.Key, nc)
+			err = cnt.SetP(f.Key, nc)
 			if err != nil {
 				return
 			}
@@ -187,7 +186,7 @@ func SetPathsDefaults(cnt container.Container, defops map[string]spec.Operation)
 	return
 }
 
-// MergeWithRoot will merge container with root
+// MergeWithRoot will merge container with root document.
 func MergeWithRoot(root spec.OpenAPI, c container.Container) (err error) {
 	r, err := container.Make(root)
 	if err != nil {
@@ -227,7 +226,7 @@ func MergeWithRoot(root spec.OpenAPI, c container.Container) (err error) {
 			return err
 		}
 
-		p := container.Wrap(map[string]interface{}{
+		p, _ := container.Make(map[string]interface{}{
 			x.key: s.Data(),
 		})
 

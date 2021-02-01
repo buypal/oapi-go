@@ -2,7 +2,6 @@ package resolver
 
 import (
 	"context"
-	"log"
 	"os"
 	"sort"
 	"strings"
@@ -81,7 +80,6 @@ func WithRootSchema(oapi spec.OpenAPI) Option {
 func Scan(ctx context.Context, options ...Option) (s oapi.OAPI, err error) {
 
 	opts := &Options{
-		log:      log.New(os.Stderr, "", 0),
 		override: make(map[string]spec.Schema),
 	}
 

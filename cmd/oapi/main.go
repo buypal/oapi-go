@@ -8,8 +8,9 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/buypal/oapi-go/pkg/logging"
 	"github.com/buypal/oapi-go/pkg/oapi"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -22,30 +23,35 @@ func main() {
 
 	cfg, _, err := getConfig()
 	if err != nil {
-		log.Fatal("config: ", err.Error())
+		panic(err)
 	}
+
+	// Instantiate logger
+	logger := cfg.logrus()
+
+	log := logging.NewLogger(func(lvl logging.Level, msg string, args ...interface{}) {
+		logger.Logf(logrus.Level(lvl), msg, args...)
+	})
 
 	config, err := cfg.full()
 	if err != nil {
-		log.Fatal("err config:", err)
+		logging.Fatal(log, "err config: %s", err.Error())
 	}
-
-	log.SetLevel(log.DebugLevel)
 
 	go func() {
 		s := <-sigChan
-		log.Infof("received %s signal", s)
+		logging.Info(log, "received %s signal", s)
 		cancel()
 	}()
 
-	spec, err := scan(ctx, config)
+	spec, err := scan(ctx, log, config)
 	if err != nil {
-		log.Fatal("err reg:", err)
+		logging.Fatal(log, "err during scan: %s", err.Error())
 	}
 
 	data, err := oapi.Format(config.Format, spec)
 	if err != nil {
-		log.Fatal(err.Error())
+		logging.Fatal(log, "err during format: %s", err.Error())
 	}
 
 	var w io.Writer
@@ -58,16 +64,16 @@ func main() {
 	default:
 		err = os.Remove(config.Output)
 		if err != nil {
-			log.Fatal(err.Error())
+			logging.Fatal(log, err.Error())
 		}
 		w, err = os.OpenFile(config.Output, os.O_RDWR|os.O_CREATE, 0755)
 		if err != nil {
-			log.Fatal(err.Error())
+			logging.Fatal(log, err.Error())
 		}
 	}
 
 	_, err = io.Copy(w, bytes.NewBuffer(data))
 	if err != nil {
-		log.Fatal(err.Error())
+		logging.Fatal(log, err.Error())
 	}
 }

@@ -1,4 +1,4 @@
-package otag
+package tag
 
 import (
 	"strconv"

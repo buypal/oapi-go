@@ -9,17 +9,22 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// SorterFn is sorting function
 type SorterFn func(string, interface{}) (interface{}, error)
 
+// Sorter wraps container and allows and provides new Masrshaling interface.
 type Sorter struct {
 	Container
 	sorter SorterFn
 }
 
+// NewSortMarshaller makes new marshaller with sorting provided
+// in second argument.
 func NewSortMarshaller(c Container, s SorterFn) Sorter {
 	return Sorter{Container: c, sorter: s}
 }
 
+// MarshalJSON returns the JSON encoding of container.
 func (c Sorter) MarshalJSON() ([]byte, error) {
 	data, err := c.sorter("json", c.c.Data())
 	if err != nil {
@@ -28,6 +33,9 @@ func (c Sorter) MarshalJSON() ([]byte, error) {
 	return json.Marshal(data)
 }
 
+// MarshalIndentJSON is like Marshal but applies Indent to format the output.
+// Each JSON element in the output will begin on a new line beginning with prefix
+// followed by one or more copies of indent according to the indentation nesting.
 func (c Sorter) MarshalIndentJSON(prefix string, indent string) ([]byte, error) {
 	data, err := c.sorter("json", c.c.Data())
 	if err != nil {
@@ -36,6 +44,8 @@ func (c Sorter) MarshalIndentJSON(prefix string, indent string) ([]byte, error) 
 	return json.MarshalIndent(data, prefix, indent)
 }
 
+// MarshalYAML serializes the value provided into a YAML document. The structure
+// of the generated document will reflect the structure of the value itself.
 func (c Sorter) MarshalYAML() ([]byte, error) {
 	data, err := c.sorter("yaml", c.c.Data())
 	if err != nil {
@@ -53,6 +63,8 @@ func indexOf(element string, data []string) int {
 	return -1 //not found.
 }
 
+// SortMapMarhsaler is one of sorting functions allowing to
+// sorty by "order" which is supplied as a first argument.
 func SortMapMarhsaler(order []string) SorterFn {
 	return func(_ string, data interface{}) (interface{}, error) {
 		if order == nil {
@@ -65,10 +77,8 @@ func SortMapMarhsaler(order []string) SorterFn {
 		var ms MapSlice
 		for k, v := range dd {
 			ms = append(ms, MapItem{
-				MapItem: yaml.MapItem{
-					Key:   k,
-					Value: v,
-				},
+				Key:   k,
+				Val:   v,
 				Index: indexOf(k, order),
 			})
 
@@ -79,44 +89,46 @@ func SortMapMarhsaler(order []string) SorterFn {
 }
 
 // MapItem representation of one map item.
+// MapItem is used internally by yaml pkg to provide
+// key/value structure allowing object to be serialozed as array.
+// By setting Index you are setting position of key in object.
 type MapItem struct {
-	yaml.MapItem `json:",inline" yaml:",inline"`
-	Index        int
+	Key   string
+	Val   interface{}
+	Index int
 }
-
-// UnmarshalJSON for map item.
-func (mi *MapItem) UnmarshalJSON(b []byte) error {
-	var v interface{}
-	if err := json.Unmarshal(b, &v); err != nil {
-		return err
-	}
-	mi.Value = v
-	return nil
-}
-
-// // UnmarshalYAML ...
-// func (mi *MapItem) UnmarshalYAML(unmarshal func(v interface{}) error) error {
-// 	var v interface{}
-// 	if err := unmarshal(&v); err != nil {
-// 		return err
-// 	}
-// 	mi.Value = v
-// 	return nil
-// }
 
 // MapSlice of map items.
 type MapSlice []MapItem
+
+// Values returns values of MapSlice
+func (ms MapSlice) Values() (vx []interface{}) {
+	for _, v := range ms.Sort() {
+		vx = append(vx, v.Val)
+	}
+	return
+}
+
+// sort interface support
 
 func (ms MapSlice) Len() int           { return len(ms) }
 func (ms MapSlice) Less(i, j int) bool { return ms[i].Index < ms[j].Index }
 func (ms MapSlice) Swap(i, j int)      { ms[i], ms[j] = ms[j], ms[i] }
 
+// Sort will sort items by index and return copy
+func (ms MapSlice) Sort() MapSlice {
+	a := make(MapSlice, len(ms))
+	copy(a, ms)
+	sort.Sort(a)
+	return a
+}
+
 // MarshalJSON for map slice.
 func (ms MapSlice) MarshalJSON() ([]byte, error) {
 	buf := &bytes.Buffer{}
 	buf.Write([]byte{'{'})
-	for i, mi := range ms {
-		b, err := json.Marshal(&mi.Value)
+	for i, mi := range ms.Sort() {
+		b, err := json.Marshal(&mi.Val)
 		if err != nil {
 			return nil, err
 		}
@@ -130,47 +142,14 @@ func (ms MapSlice) MarshalJSON() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// MarshalYAML for map slice.
+// MarshalYAML will marshal yaml to MapSlice.
 func (ms MapSlice) MarshalYAML() (interface{}, error) {
 	var m yaml.MapSlice
-	for _, x := range ms {
-		m = append(m, x.MapItem)
+	for _, x := range ms.Sort() {
+		m = append(m, yaml.MapItem{
+			Key:   x.Key,
+			Value: x.Val,
+		})
 	}
 	return m, nil
-}
-
-// UnmarshalJSON for map slice.
-func (ms *MapSlice) UnmarshalJSON(b []byte) error {
-	m := map[string]MapItem{}
-	if err := json.Unmarshal(b, &m); err != nil {
-		return err
-	}
-	for k, v := range m {
-		*ms = append(*ms, MapItem{
-			MapItem: yaml.MapItem{
-				Key:   k,
-				Value: v.Value,
-			},
-			Index: v.Index,
-		})
-	}
-	return nil
-}
-
-// UnmarshalYAML ...
-func (ms *MapSlice) UnmarshalYAML(unmarshal func(v interface{}) error) error {
-	var v yaml.MapSlice
-	if err := unmarshal(&v); err != nil {
-		return err
-	}
-	for i, x := range v {
-		*ms = append(*ms, MapItem{
-			MapItem: yaml.MapItem{
-				Key:   x.Key,
-				Value: x.Value,
-			},
-			Index: i,
-		})
-	}
-	return nil
 }

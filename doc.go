@@ -7,7 +7,6 @@
 //
 // In your go code you can use following syntax
 //
-//oapi:merge <source>
 //oapi:schema <schema name> <source of schema>
 //
 // Following URL addresses will be resolved as $ref in yaml:

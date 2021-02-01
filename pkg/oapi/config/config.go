@@ -1,4 +1,4 @@
-package ocfg
+package config
 
 import (
 	"encoding/json"

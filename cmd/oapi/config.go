@@ -5,7 +5,8 @@ import (
 	"path/filepath"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/buypal/oapi-go/pkg/ocfg"
+	"github.com/buypal/oapi-go/pkg/oapi/config"
+	"github.com/sirupsen/logrus"
 )
 
 // Config represents new configuration
@@ -26,7 +27,8 @@ func getConfig() (cfg Config, cmd string, err error) {
 	cfg.Usage = func() { app.Usage(os.Args[1:]) }
 
 	app.Flag("loglevel", "will set loglevel").
-		EnumVar(&cfg.LogLevel, "nolog", "errors", "info", "debug", "trace")
+		Default("nolog").
+		EnumVar(&cfg.LogLevel, "nolog", "panic", "fatal", "error", "warn", "info", "debug", "trace")
 
 	app.Flag("config", "config to be used").
 		StringVar(&cfg.Config)
@@ -45,14 +47,28 @@ func getConfig() (cfg Config, cmd string, err error) {
 	return
 }
 
-func (ff Config) full() (config ocfg.Config, err error) {
+func (ff Config) logrus() *logrus.Logger {
+	// Instantiate logger
+	logrs := logrus.New()
+	logrs.SetLevel(logrus.FatalLevel)
+
+	// parse level
+	lx, err := logrus.ParseLevel(ff.LogLevel)
+	if err != nil {
+		logrs.Fatal(err.Error())
+	}
+	logrs.SetLevel(lx)
+	return logrs
+}
+
+func (ff Config) full() (cfg config.Config, err error) {
 	wd, _ := os.Getwd()
 
 	if len(ff.Config) > 0 {
 		// path
 		path := toAbsPath(ff.Config, wd)
 		// read config
-		config, err = ocfg.ReadFile(path)
+		cfg, err = config.ReadFile(path)
 		if err != nil {
 			return
 		}
@@ -60,30 +76,30 @@ func (ff Config) full() (config ocfg.Config, err error) {
 
 	// directory of execution
 	dir := wd
-	if len(config.Dir) > 0 {
-		dir = toAbsPath(config.Dir, filepath.Dir(config.FilePath))
+	if len(cfg.Dir) > 0 {
+		dir = toAbsPath(cfg.Dir, filepath.Dir(cfg.FilePath))
 	}
 	// if flags are present let them overwrite
 	if len(ff.Dir) > 0 {
 		dir = toAbsPath(ff.Dir, wd)
 	}
-	config.Dir = dir
+	cfg.Dir = dir
 
 	// format of openapi
-	if len(config.Format) == 0 {
-		config.Format = "json:pretty"
+	if len(cfg.Format) == 0 {
+		cfg.Format = "json:pretty"
 	}
 	if len(ff.Format) > 0 {
-		config.Format = ff.Format
+		cfg.Format = ff.Format
 	}
 
 	// output destination
 	output := "stdout"
-	if len(config.Output) > 0 {
-		switch config.Output {
+	if len(cfg.Output) > 0 {
+		switch cfg.Output {
 		case "stderr", "stdout":
 		default:
-			output = toAbsPath(config.Output, config.Dir)
+			output = toAbsPath(cfg.Output, cfg.Dir)
 		}
 	}
 	if len(ff.Output) > 0 {
@@ -93,7 +109,7 @@ func (ff Config) full() (config ocfg.Config, err error) {
 			output = toAbsPath(ff.Output, wd)
 		}
 	}
-	config.Output = output
+	cfg.Output = output
 
 	// if len(flags.LogLevel) > 0 {
 	// 	config.LogLevel = flags.LogLevel

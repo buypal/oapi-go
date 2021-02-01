@@ -15,7 +15,11 @@ var order = []string{
 	"paths",
 }
 
-// OAPI specification
+// OAPI specification wraps container and
+// parsed specification together, parsed
+// specification is used to validate & enforce
+// proper specification format, whereas container
+// is rather manipulation tool for building openapi spec.
 type OAPI struct {
 	spec.OpenAPI
 	c container.Container

@@ -3,19 +3,18 @@ package main
 import (
 	"context"
 
+	"github.com/buypal/oapi-go/pkg/logging"
 	"github.com/buypal/oapi-go/pkg/oapi"
+	"github.com/buypal/oapi-go/pkg/oapi/config"
+	"github.com/buypal/oapi-go/pkg/oapi/resolver"
 	"github.com/buypal/oapi-go/pkg/oapi/spec"
-	"github.com/buypal/oapi-go/pkg/ocfg"
-	"github.com/buypal/oapi-go/pkg/resolver"
-	log "github.com/sirupsen/logrus"
 )
 
-func scan(ctx context.Context, cfg ocfg.Config) (oapi.OAPI, error) {
+func scan(ctx context.Context, log logging.Printer, cfg config.Config) (oapi.OAPI, error) {
 	// resolver options
-	opts := []resolver.Option{}
-
-	// todo
-	opts = append(opts, resolver.WithLog(log.StandardLogger()))
+	opts := []resolver.Option{
+		resolver.WithLog(log),
+	}
 
 	// execution directory
 	if len(cfg.Dir) > 0 {

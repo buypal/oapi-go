@@ -6,7 +6,7 @@ import (
 
 	"github.com/buypal/oapi-go/pkg/logging"
 	"github.com/buypal/oapi-go/pkg/oapi/spec"
-	"github.com/buypal/oapi-go/pkg/otag"
+	"github.com/buypal/oapi-go/pkg/oapi/tag"
 	"github.com/buypal/oapi-go/pkg/pointer"
 
 	"github.com/pkg/errors"
@@ -33,7 +33,7 @@ func (r *typesScanner) resolve(ptr pointer.Pointer) (pointer.Pointer, *spec.Sche
 	if !ok {
 		return pointer.Pointer{}, nil, errors.Errorf("failed to resolve %q", ptr.String())
 	}
-	sch, err := type2schema(tp, r.points, path{}, otag.Tag{})
+	sch, err := type2schema(tp, r.points, path{}, tag.Tag{})
 	return pp.Pointer, sch, err
 }
 
@@ -189,11 +189,11 @@ func (tp path) visit(t types.Type) (p path, visited bool) {
 }
 
 // type2schema will conver type to spec.Scheme
-func type2schema(t types.Type, m pointmap, tp path, tag otag.Tag) (*spec.Schema, error) {
+func type2schema(t types.Type, m pointmap, tp path, tg tag.Tag) (*spec.Schema, error) {
 	t = t.Underlying()
 
 	if tp.has(t) {
-		return reference2schema(t, m, tp, tag)
+		return reference2schema(t, m, tp, tg)
 	}
 	tp = append(tp, t)
 
@@ -204,23 +204,23 @@ func type2schema(t types.Type, m pointmap, tp path, tag otag.Tag) (*spec.Schema,
 		if len(tp) == 1 {
 			return struct2schema(u, m, tp)
 		}
-		return reference2schema(u, m, tp, tag)
+		return reference2schema(u, m, tp, tg)
 
 	case *types.Array:
-		return array2schema(u, m, tp, tag)
+		return array2schema(u, m, tp, tg)
 
 	// Basic type will just popoulate type and format
 	case *types.Basic:
-		return basic2schema(u.Kind(), tag)
+		return basic2schema(u.Kind(), tg)
 
 	case *types.Map:
-		return map2schema(u, m, tp, tag)
+		return map2schema(u, m, tp, tg)
 
 	case *types.Slice:
-		return slice2schema(u, m, tp, tag)
+		return slice2schema(u, m, tp, tg)
 
 	case *types.Pointer:
-		return pointer2schema(u, m, tp, tag)
+		return pointer2schema(u, m, tp, tg)
 
 	// We cant marshal to schema
 	default:
@@ -229,14 +229,14 @@ func type2schema(t types.Type, m pointmap, tp path, tag otag.Tag) (*spec.Schema,
 	}
 }
 
-func typeElement2schema(t elementer, m pointmap, tp path, tag otag.Tag) (s *spec.Schema, err error) {
+func typeElement2schema(t elementer, m pointmap, tp path, tg tag.Tag) (s *spec.Schema, err error) {
 	// Saying if element is slice, map, array, pointer and its inner element
 	// is same as its outer element it is invalid type for scheme.
 	// Exmple would be `type T *T` or `type T map[string]T`
 	if types.Identical(t, t.Elem()) {
 		return nil, errors.Errorf("type %q is self referencing identical type", t.String())
 	}
-	return type2schema(t.Elem(), m, tp, tag)
+	return type2schema(t.Elem(), m, tp, tg)
 }
 
 func struct2schema(t *types.Struct, m pointmap, tp path) (s *spec.Schema, err error) {
@@ -244,7 +244,7 @@ func struct2schema(t *types.Struct, m pointmap, tp path) (s *spec.Schema, err er
 	s.Type = spec.TypeObject
 	s.Properties = make(map[string]*spec.Schema)
 
-	fields, err := collectStructFields(t, path{}, otag.Tag{})
+	fields, err := collectStructFields(t, path{})
 	if err != nil {
 		return
 	}
@@ -297,8 +297,8 @@ func struct2schema(t *types.Struct, m pointmap, tp path) (s *spec.Schema, err er
 	return
 }
 
-func map2schema(t *types.Map, m pointmap, tp path, tag otag.Tag) (s *spec.Schema, err error) {
-	sch, err := typeElement2schema(t, m, tp, tag)
+func map2schema(t *types.Map, m pointmap, tp path, tg tag.Tag) (s *spec.Schema, err error) {
+	sch, err := typeElement2schema(t, m, tp, tg)
 	if err != nil {
 		return
 	}
@@ -308,17 +308,17 @@ func map2schema(t *types.Map, m pointmap, tp path, tag otag.Tag) (s *spec.Schema
 	s.AdditionalProperties = sch
 	s.Nullable = true
 
-	s.MinProperties = tag.MinProps
-	s.MaxProperties = tag.MaxProps
-	if tag.Nullable != nil {
-		s.Nullable = *tag.Nullable
+	s.MinProperties = tg.MinProps
+	s.MaxProperties = tg.MaxProps
+	if tg.Nullable != nil {
+		s.Nullable = *tg.Nullable
 	}
 
 	return
 }
 
-func slice2schema(t *types.Slice, m pointmap, tp path, tag otag.Tag) (s *spec.Schema, err error) {
-	sch, err := typeElement2schema(t, m, tp, tag)
+func slice2schema(t *types.Slice, m pointmap, tp path, tg tag.Tag) (s *spec.Schema, err error) {
+	sch, err := typeElement2schema(t, m, tp, tg)
 	if err != nil {
 		return
 	}
@@ -328,18 +328,18 @@ func slice2schema(t *types.Slice, m pointmap, tp path, tag otag.Tag) (s *spec.Sc
 	s.Items = sch
 	s.Nullable = true
 
-	s.MinItems = tag.MinItems
-	s.MaxItems = tag.MaxItems
-	s.UniqueItems = tag.UniqItems
-	if tag.Nullable != nil {
-		s.Nullable = *tag.Nullable
+	s.MinItems = tg.MinItems
+	s.MaxItems = tg.MaxItems
+	s.UniqueItems = tg.UniqItems
+	if tg.Nullable != nil {
+		s.Nullable = *tg.Nullable
 	}
 
 	return
 }
 
-func array2schema(t *types.Array, m pointmap, tp path, tag otag.Tag) (s *spec.Schema, err error) {
-	sch, err := typeElement2schema(t, m, tp, tag)
+func array2schema(t *types.Array, m pointmap, tp path, tg tag.Tag) (s *spec.Schema, err error) {
+	sch, err := typeElement2schema(t, m, tp, tg)
 	if err != nil {
 		return
 	}
@@ -348,31 +348,31 @@ func array2schema(t *types.Array, m pointmap, tp path, tag otag.Tag) (s *spec.Sc
 	s.Type = spec.TypeArray
 	s.Items = sch
 
-	s.MinItems = tag.MinItems
-	s.MaxItems = tag.MaxItems
+	s.MinItems = tg.MinItems
+	s.MaxItems = tg.MaxItems
 
 	if t.Len() > 0 {
 		x := t.Len()
 		s.MaxItems = &x
 	}
 
-	s.UniqueItems = tag.UniqItems
-	if tag.Nullable != nil {
-		s.Nullable = *tag.Nullable
+	s.UniqueItems = tg.UniqItems
+	if tg.Nullable != nil {
+		s.Nullable = *tg.Nullable
 	}
 
 	return
 }
 
-func pointer2schema(t *types.Pointer, m pointmap, tp path, tag otag.Tag) (s *spec.Schema, err error) {
-	s, err = typeElement2schema(t, m, tp, tag)
+func pointer2schema(t *types.Pointer, m pointmap, tp path, tg tag.Tag) (s *spec.Schema, err error) {
+	s, err = typeElement2schema(t, m, tp, tg)
 	if err != nil {
 		return
 	}
 	s.Nullable = true
 
-	if tag.Nullable != nil {
-		s.Nullable = *tag.Nullable
+	if tg.Nullable != nil {
+		s.Nullable = *tg.Nullable
 	}
 
 	if s.Ref == nil {
@@ -404,7 +404,7 @@ func AddRefOverride(p pointer.Pointer, s spec.Schema) {
 	refStdMapping[p.String()] = s
 }
 
-func reference2schema(t types.Type, m pointmap, tp path, tag otag.Tag) (s *spec.Schema, err error) {
+func reference2schema(t types.Type, m pointmap, tp path, tg tag.Tag) (s *spec.Schema, err error) {
 	ptr, ok := m.pick(t)
 	if !ok {
 		return nil, errors.New("failed to resolve sturct")
@@ -427,7 +427,7 @@ func reference2schema(t types.Type, m pointmap, tp path, tag otag.Tag) (s *spec.
 // int64  : -9223372036854775808 to 9223372036854775807
 
 // Go2schemaType indicates type will transfer golang basic type to open api supported type.
-func basic2schema(t types.BasicKind, tag otag.Tag) (s *spec.Schema, err error) {
+func basic2schema(t types.BasicKind, tg tag.Tag) (s *spec.Schema, err error) {
 	zero := 0.
 	switch t {
 	case types.Float32:
@@ -464,77 +464,77 @@ func basic2schema(t types.BasicKind, tag otag.Tag) (s *spec.Schema, err error) {
 
 	switch s.Type {
 	case spec.TypeNumber, spec.TypeInteger:
-		if tag.Min != nil {
-			s.Minimum = tag.Min
+		if tg.Min != nil {
+			s.Minimum = tg.Min
 		}
-		if tag.Max != nil {
-			s.Maximum = tag.Max
+		if tg.Max != nil {
+			s.Maximum = tg.Max
 		}
-		if tag.EMin != nil {
-			s.Minimum = tag.EMin
+		if tg.EMin != nil {
+			s.Minimum = tg.EMin
 			s.ExclusiveMinimum = true
 		}
-		if tag.EMax != nil {
-			s.Maximum = tag.EMax
+		if tg.EMax != nil {
+			s.Maximum = tg.EMax
 			s.ExclusiveMaximum = true
 		}
-		if tag.MulOf != nil {
-			s.MultipleOf = tag.MulOf
+		if tg.MulOf != nil {
+			s.MultipleOf = tg.MulOf
 		}
 	case spec.TypeString:
-		if tag.MaxLen != nil {
-			s.MaxLength = tag.MaxLen
+		if tg.MaxLen != nil {
+			s.MaxLength = tg.MaxLen
 		}
-		if tag.MinLen != nil {
-			s.MinLength = tag.MinLen
+		if tg.MinLen != nil {
+			s.MinLength = tg.MinLen
 		}
-		s.Pattern = tag.Pattern
+		s.Pattern = tg.Pattern
 	}
 
 	return s, nil
 }
 
-func basicString2schema(t string, tag otag.Tag) (s *spec.Schema, err error) {
+func basicString2schema(t string, tg tag.Tag) (s *spec.Schema, err error) {
 	y := strings.Trim(t, " ")
 	switch y {
 	case "string":
-		return basic2schema(types.String, tag)
+		return basic2schema(types.String, tg)
 	case "float32", "float":
-		return basic2schema(types.Float32, tag)
+		return basic2schema(types.Float32, tg)
 	case "float64", "double":
-		return basic2schema(types.Float64, tag)
+		return basic2schema(types.Float64, tg)
 	case "uint":
-		return basic2schema(types.Uint, tag)
+		return basic2schema(types.Uint, tg)
 	case "uint8":
-		return basic2schema(types.Uint8, tag)
+		return basic2schema(types.Uint8, tg)
 	case "uint16":
-		return basic2schema(types.Uint16, tag)
+		return basic2schema(types.Uint16, tg)
 	case "uint32":
-		return basic2schema(types.Uint32, tag)
+		return basic2schema(types.Uint32, tg)
 	case "uint64":
-		return basic2schema(types.Uint64, tag)
+		return basic2schema(types.Uint64, tg)
 	case "int":
-		return basic2schema(types.Int, tag)
+		return basic2schema(types.Int, tg)
 	case "int8":
-		return basic2schema(types.Int8, tag)
+		return basic2schema(types.Int8, tg)
 	case "int16":
-		return basic2schema(types.Int16, tag)
+		return basic2schema(types.Int16, tg)
 	case "int32", "integer":
-		return basic2schema(types.Int32, tag)
+		return basic2schema(types.Int32, tg)
 	case "int64":
-		return basic2schema(types.Int64, tag)
+		return basic2schema(types.Int64, tg)
 	case "bool":
-		return basic2schema(types.Bool, tag)
+		return basic2schema(types.Bool, tg)
 	case "base64":
-		s, err = basic2schema(types.String, tag)
+		s, err = basic2schema(types.String, tg)
 		s.Format = "binary"
 		return s, err
 	case "uuid":
-		s, err = basic2schema(types.String, tag)
+		s, err = basic2schema(types.String, tg)
 		s.Format = "uuid"
 		return s, err
 	case "password":
-		s, err = basic2schema(types.String, tag)
+		s, err = basic2schema(types.String, tg)
 		s.Format = "password"
 		return s, err
 	case "number":
@@ -548,7 +548,7 @@ func basicString2schema(t string, tag otag.Tag) (s *spec.Schema, err error) {
 	}
 }
 
-func castInlineStruct(t *types.Var, tag otag.Tag) (*types.Struct, bool) {
+func castInlineStruct(t *types.Var, tg tag.Tag) (*types.Struct, bool) {
 	tx := t.Type().Underlying()
 	// check for pointer
 	if p, ok := tx.(*types.Pointer); ok {
@@ -556,8 +556,8 @@ func castInlineStruct(t *types.Var, tag otag.Tag) (*types.Struct, bool) {
 	}
 	st, ok := tx.(*types.Struct)
 	if ok {
-		if tag.Inline != nil {
-			ok = *tag.Inline
+		if tg.Inline != nil {
+			ok = *tg.Inline
 		} else {
 			ok = t.Embedded()
 		}
@@ -567,10 +567,10 @@ func castInlineStruct(t *types.Var, tag otag.Tag) (*types.Struct, bool) {
 
 type structField struct {
 	field *types.Var
-	tag   otag.Tag
+	tag   tag.Tag
 }
 
-func collectStructFields(t *types.Struct, p path, tag otag.Tag) (arr []structField, err error) {
+func collectStructFields(t *types.Struct, p path) (arr []structField, err error) {
 	// prevent cycles
 	if p.has(t) {
 		return []structField{}, nil
@@ -578,18 +578,18 @@ func collectStructFields(t *types.Struct, p path, tag otag.Tag) (arr []structFie
 	p = append(p, t)
 	for i := 0; i < t.NumFields(); i++ {
 		x := t.Field(i)
-		var tag otag.Tag
-		tag, err = otag.Parse(t.Tag(i))
+		var tx tag.Tag
+		tx, err = tag.Parse(t.Tag(i))
 		if err != nil {
 			return
 		}
-		if tag.Ignore || !x.Exported() {
+		if tx.Ignore || !x.Exported() {
 			continue
 		}
-		st, ok := castInlineStruct(x, tag)
+		st, ok := castInlineStruct(x, tx)
 		if ok {
 			var z []structField
-			z, err = collectStructFields(st, p, tag)
+			z, err = collectStructFields(st, p)
 			if err != nil {
 				return
 			}
@@ -597,7 +597,7 @@ func collectStructFields(t *types.Struct, p path, tag otag.Tag) (arr []structFie
 		} else {
 			arr = append(arr, structField{
 				field: x,
-				tag:   tag,
+				tag:   tx,
 			})
 		}
 	}

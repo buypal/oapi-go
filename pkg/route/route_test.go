@@ -24,3 +24,12 @@ func TestRoute(t *testing.T) {
 	require.True(t, MustMatch("/[]foo/{av}/1/valid/*2", "", "/[]foo/{xxxx}/1/valid/2"))
 	require.True(t, MustMatch("GET:/[]foo/{av}/1/valid/*2", "", "/[]foo/{xxxx}/1/valid/2"))
 }
+
+// MustMatch panic version of Match
+func MustMatch(pattern, method, path string) bool {
+	x, err := Match(pattern, method, path)
+	if err != nil {
+		panic(err)
+	}
+	return x
+}

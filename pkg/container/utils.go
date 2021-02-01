@@ -4,39 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+
+	"github.com/Jeffail/gabs/v2"
+	"github.com/pkg/errors"
 )
 
-type KeyVal struct {
-	Key string
-	Val interface{}
-}
-
-type KeyVals []KeyVal
-
-func (vv KeyVals) Values() (vx []interface{}) {
-	for _, v := range vv {
-		vx = append(vx, v)
-	}
-	return
-}
-
-func (vv KeyVals) Strings() (vx []string) {
-	for _, v := range vv {
-		s, ok := v.Val.(string)
-		if !ok {
-			continue
-		}
-		vx = append(vx, s)
-	}
-	return
-}
-
 // ExtractKey will extract keys from container
-func ExtractKey(c Container, key string) (pp KeyVals, err error) {
+func ExtractKey(c Container, key string) (pp MapSlice, err error) {
 	ff, err := c.Flatten()
 	if err != nil {
 		return nil, err
 	}
+	var ii int
 	for k, v := range ff {
 		x := strings.Split(k, ".")
 		if len(x) == 0 {
@@ -45,33 +24,62 @@ func ExtractKey(c Container, key string) (pp KeyVals, err error) {
 		if x[len(x)-1] != key {
 			continue
 		}
-		pp = append(pp, KeyVal{
-			Key: k,
-			Val: v,
+		pp = append(pp, MapItem{
+			Key:   k,
+			Val:   v,
+			Index: ii,
 		})
+		ii++
 	}
 	return pp, nil
+}
+
+// SliceToDotPath converts slice into dot path
+func SliceToDotPath(path []string) string {
+	hierarchy := make([]string, len(path))
+	for i, v := range path {
+		v = strings.Replace(v, ".", "~1", -1)
+		v = strings.Replace(v, "~", "~0", -1)
+		hierarchy[i] = v
+	}
+	return strings.Join(hierarchy, ".")
 }
 
 // clone will clone given interface by marshaling and
 // unmarshaling via json
 func clone(c interface{}) (interface{}, error) {
-	if x, ok := c.(Container); ok {
-		c = x.c.Data()
-	}
-	if x, ok := c.(*Container); ok {
-		c = x.c.Data()
+	if x, ok := cast(c); ok {
+		c = x.Data()
 	}
 	bb, err := json.Marshal(mmap(c))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "failed to clone interface{}")
 	}
 	var mm interface{}
-	err = json.Unmarshal(bb, &mm)
-	if err != nil {
-		return nil, err
-	}
+	json.Unmarshal(bb, &mm) // no need for error check
 	return mm, nil
+}
+
+// cast will cast interface to container
+func cast(c interface{}) (Container, bool) {
+	if x, ok := c.(Container); ok {
+		return x, true
+	}
+	if x, ok := c.(*Container); ok && x != nil {
+		return *x, true
+	}
+	return Container{}, false
+}
+
+// wrap will wrap given value into container only
+// if it is not already one
+func wrap(c interface{}) Container {
+	if x, ok := cast(c); ok {
+		return x
+	}
+	return Container{
+		c: gabs.Wrap(c),
+	}
 }
 
 // mmap walks the given dynamic object recursively, and
