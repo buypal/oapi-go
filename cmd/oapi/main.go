@@ -26,12 +26,17 @@ func main() {
 		panic(err)
 	}
 
-	// Instantiate logger
-	logger := cfg.logrus()
+	var log logging.Printer
 
-	log := logging.NewLogger(func(lvl logging.Level, msg string, args ...interface{}) {
-		logger.Logf(logrus.Level(lvl), msg, args...)
-	})
+	if cfg.LogLevel != "nolog" {
+		// Instantiate logger
+		logger := cfg.logrus()
+		log = logging.NewLogger(func(lvl logging.Level, msg string, args ...interface{}) {
+			logger.Logf(logrus.Level(lvl), msg, args...)
+		})
+	} else {
+		log = logging.Void()
+	}
 
 	config, err := cfg.full()
 	if err != nil {

@@ -51,7 +51,11 @@ func Scan(pkgs []*packages.Package, fn Scanner) (err error) {
 		for _, path := range paths {
 			visit(pkg.Imports[path])
 		}
-		errs = append(errs, fn.Scan(pkg))
+
+		if err := fn.Scan(pkg); err != nil {
+			errs = append(errs, err)
+			return
+		}
 	}
 
 	for _, pkg := range pkgs {
