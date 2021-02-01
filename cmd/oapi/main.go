@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/buypal/oapi-go/pkg/logging"
-	"github.com/buypal/oapi-go/pkg/oapi"
+	"github.com/buypal/oapi-go/internal/logging"
+	"github.com/buypal/oapi-go/internal/oapi"
 	"github.com/sirupsen/logrus"
 )
 

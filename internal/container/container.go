@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/Jeffail/gabs/v2"
-	"github.com/buypal/oapi-go/pkg/logging"
+	"github.com/buypal/oapi-go/internal/logging"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )

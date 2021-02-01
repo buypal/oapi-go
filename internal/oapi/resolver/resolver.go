@@ -1,9 +1,9 @@
-package oapi
+package resolver
 
 import (
-	"github.com/buypal/oapi-go/pkg/container"
-	"github.com/buypal/oapi-go/pkg/oapi/spec"
-	"github.com/buypal/oapi-go/pkg/pointer"
+	"github.com/buypal/oapi-go/internal/container"
+	"github.com/buypal/oapi-go/internal/oapi/spec"
+	"github.com/buypal/oapi-go/internal/pointer"
 )
 
 var zero = container.Zero()
@@ -27,10 +27,10 @@ func (e Exports) Get(p pointer.Pointer) (Pointer, bool) {
 	return Pointer{}, false
 }
 
-// ResolverFn allows to resolve entities, $refs into actual schemes
-type ResolverFn func(pointer.Pointer) (spec.Entiter, error)
+// Fn allows to resolve entities, $refs into actual schemes
+type Fn func(pointer.Pointer) (spec.Entiter, error)
 
-func (r ResolverFn) call(p pointer.Pointer) (container.Container, error) {
+func (r Fn) call(p pointer.Pointer) (container.Container, error) {
 	x, err := r(p)
 	if err != nil {
 		return zero, err
@@ -39,7 +39,7 @@ func (r ResolverFn) call(p pointer.Pointer) (container.Container, error) {
 }
 
 // Resolve will resolve all references (pointers) in given scheme
-func Resolve(c container.Container, exp Exports, fn ResolverFn) (container.Container, error) {
+func Resolve(c container.Container, exp Exports, fn Fn) (container.Container, error) {
 	r := &resolver{
 		con: c.Clone(),
 		exp: exp,
@@ -51,7 +51,7 @@ func Resolve(c container.Container, exp Exports, fn ResolverFn) (container.Conta
 type resolver struct {
 	con container.Container
 	exp Exports
-	res ResolverFn
+	res Fn
 }
 
 func (r resolver) resolve() (container.Container, error) {

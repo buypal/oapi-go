@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/buypal/oapi-go/pkg/oapi/config"
+	"github.com/buypal/oapi-go/internal/oapi/config"
 	"github.com/sirupsen/logrus"
 )
 

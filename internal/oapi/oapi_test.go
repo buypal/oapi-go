@@ -3,8 +3,8 @@ package oapi
 import (
 	"testing"
 
-	"github.com/buypal/oapi-go/pkg/container"
-	"github.com/buypal/oapi-go/pkg/oapi/spec"
+	"github.com/buypal/oapi-go/internal/container"
+	"github.com/buypal/oapi-go/internal/oapi/spec"
 	"github.com/stretchr/testify/require"
 )
 

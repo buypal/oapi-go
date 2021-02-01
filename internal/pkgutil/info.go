@@ -1,4 +1,4 @@
-package resolver
+package pkgutil
 
 import (
 	"go/build"
@@ -9,24 +9,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/tools/go/packages"
 )
-
-var stdpkgs = make(map[string]struct{})
-
-func init() {
-	pkgs, err := packages.Load(nil, "std")
-	if err != nil {
-		panic(err)
-	}
-
-	for _, p := range pkgs {
-		stdpkgs[p.PkgPath] = struct{}{}
-	}
-}
-
-func isStdLibPkg(pkg *packages.Package) bool {
-	_, ok := stdpkgs[pkg.PkgPath]
-	return ok
-}
 
 func getGoPath() string {
 	gopath := os.Getenv("GOPATH")
@@ -50,19 +32,11 @@ func getPkgPath(pkg *packages.Package) (string, bool) {
 	return filepath.Join(pkg.Module.Dir, strings.Replace(pkg.PkgPath, pkg.Module.Path, "", 1)), true
 }
 
-type pkgInfo struct {
-	*packages.Package
-	dir string
-}
-
-func newPkgInfo(pkg *packages.Package) (pkgInfo, error) {
+// GetPkgPath reports pkg path directory.
+func GetPkgPath(pkg *packages.Package) (string, error) {
 	p, ok := getPkgPath(pkg)
 	if !ok {
-		return pkgInfo{}, errors.Errorf("failed to determine pkg info for pkg %s", pkg.PkgPath)
+		return "", errors.Errorf("failed to determine pkg info for pkg %s", pkg.PkgPath)
 	}
-	pi := pkgInfo{
-		Package: pkg,
-		dir:     p,
-	}
-	return pi, nil
+	return p, nil
 }

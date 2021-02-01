@@ -1,12 +1,12 @@
-package resolver
+package types
 
 import (
 	"go/types"
 	"sort"
 	"strings"
 
-	"github.com/buypal/oapi-go/pkg/logging"
-	"github.com/buypal/oapi-go/pkg/pointer"
+	"github.com/buypal/oapi-go/internal/logging"
+	"github.com/buypal/oapi-go/internal/pointer"
 	"golang.org/x/tools/go/types/typeutil"
 )
 

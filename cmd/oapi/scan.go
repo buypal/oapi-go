@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 
-	"github.com/buypal/oapi-go/pkg/logging"
-	"github.com/buypal/oapi-go/pkg/oapi"
-	"github.com/buypal/oapi-go/pkg/oapi/config"
-	"github.com/buypal/oapi-go/pkg/oapi/resolver"
-	"github.com/buypal/oapi-go/pkg/oapi/spec"
+	"github.com/buypal/oapi-go/internal/logging"
+	"github.com/buypal/oapi-go/internal/oapi"
+	"github.com/buypal/oapi-go/internal/oapi/config"
+	"github.com/buypal/oapi-go/internal/oapi/resolver"
+	"github.com/buypal/oapi-go/internal/oapi/spec"
 )
 
 func scan(ctx context.Context, log logging.Printer, cfg config.Config) (oapi.OAPI, error) {

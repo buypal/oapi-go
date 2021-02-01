@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"path/filepath"
 
-	"github.com/buypal/oapi-go/pkg/container"
-	"github.com/buypal/oapi-go/pkg/oapi/spec"
+	"github.com/buypal/oapi-go/internal/container"
+	"github.com/buypal/oapi-go/internal/oapi/spec"
 )
 
 type Config struct {

@@ -1,74 +1,15 @@
-package resolver
+package types
 
 import (
 	"go/types"
 	"strings"
 
-	"github.com/buypal/oapi-go/pkg/logging"
-	"github.com/buypal/oapi-go/pkg/oapi/spec"
-	"github.com/buypal/oapi-go/pkg/oapi/tag"
-	"github.com/buypal/oapi-go/pkg/pointer"
+	"github.com/buypal/oapi-go/internal/oapi/spec"
+	"github.com/buypal/oapi-go/internal/pointer"
+	"github.com/buypal/oapi-go/tag"
 
 	"github.com/pkg/errors"
-	"golang.org/x/tools/go/packages"
 )
-
-// typesScanner will scan types and allow to resolve tem into full structures
-type typesScanner struct {
-	pointers pointer.Pointers
-	points   pointmap
-}
-
-func newTypeScanner(ptrs pointer.Pointers) *typesScanner {
-	return &typesScanner{
-		pointers: ptrs,
-	}
-}
-
-// resolve will return new pointer and scheme, new pointer might be returned in cases
-// where original pointer is not fully resolved.
-func (r *typesScanner) resolve(ptr pointer.Pointer) (pointer.Pointer, *spec.Schema, error) {
-	tp, _ := r.points.findType(ptr)
-	pp, ok := r.points.pick(tp)
-	if !ok {
-		return pointer.Pointer{}, nil, errors.Errorf("failed to resolve %q", ptr.String())
-	}
-	sch, err := type2schema(tp, r.points, path{}, tag.Tag{})
-	return pp.Pointer, sch, err
-}
-
-func (r *typesScanner) log(log logging.Printer) {
-	r.points.log(log)
-}
-
-func (r *typesScanner) scan(pkg *packages.Package) (errs []error) {
-	scope := pkg.Types.Scope()
-
-	for _, ptr := range r.pointers {
-		url := ptr.URL
-		if url.Scheme != "go" {
-			continue
-		}
-		if pkg.Types.Path() != ptr.PkgPath() {
-			continue
-		}
-		head, ok := ptr.Fragment.Head()
-		if !ok {
-			continue
-		}
-		obj := scope.Lookup(head)
-		if obj == nil {
-			continue
-		}
-		err := collectTypes(obj, &r.points)
-		if err != nil {
-			errs = append(errs, errors.Wrapf(err, "failed to register type %q", obj.Type().String()))
-			continue
-		}
-	}
-
-	return
-}
 
 // collect types will wrap walk providing inital arguments
 func collectTypes(t types.Object, m *pointmap) error {

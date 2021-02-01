@@ -1,4 +1,4 @@
-package resolver
+package types
 
 import (
 	"fmt"
@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/buypal/oapi-go/pkg/container"
-	"github.com/buypal/oapi-go/pkg/oapi/tag"
-	"github.com/buypal/oapi-go/pkg/pointer"
+	"github.com/buypal/oapi-go/internal/container"
+	"github.com/buypal/oapi-go/internal/pointer"
+	"github.com/buypal/oapi-go/tag"
 	"github.com/stretchr/testify/require"
 )
 

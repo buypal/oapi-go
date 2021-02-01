@@ -1,7 +1,7 @@
 package spec
 
 import (
-	"github.com/buypal/oapi-go/pkg/pointer"
+	"github.com/buypal/oapi-go/internal/pointer"
 )
 
 // Refable A simple object to allow referencing other components in the specification, internally and externally.

@@ -3,7 +3,7 @@ package spec
 import (
 	"fmt"
 
-	"github.com/buypal/oapi-go/pkg/pointer"
+	"github.com/buypal/oapi-go/internal/pointer"
 )
 
 // Entity reflets kind of component
